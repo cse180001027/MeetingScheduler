@@ -41,7 +41,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func scheduleMeeting(w http.ResponseWriter, request *http.Request){
+func scheduleMeeting(writeresponse http.ResponseWriter, request *http.Request){
 	requestdecode := json.NewDecoder(request.Body)
 	// Declare a new Meeting struct.
 
@@ -70,58 +70,15 @@ func scheduleMeeting(w http.ResponseWriter, request *http.Request){
 			if err != nil {
 				log.Fatal(err)
 			}
-			// do something with result....
 		}
 		if err := cur.Err(); err != nil {
 			log.Fatal(err)
 		}
 	}
 
-
-
-
-
-
-
-
-	filterCursor, error := participantcollection.Find(ctx, bson.M{"RSVP": })
-	if err != nil {
-		log.Fatal(err)
-	}
-	var episodesFiltered []bson.M{}
-	if err = filterCursor.All(ctx, &episodesFiltered); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(episodesFiltered)
-
-
-
-	context , cancel = context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	reseult, error := collection.InsertOne(context, bson.M{"": "pi", "value": 3.14159})
-	id := res.InsertedID
-
-
-
-
-
-
-
-
-
-
-	json.Unmarshal( requestdecode []byte, &meetinginstance)
-
-
-	error := json.NewDecoder(r.Body).Decode(&p)
-	if (error != nil){
-		http.Error(w, error.Error(), http.StatusBadRequest)
-		return
-	}
-
 	//update and do things appropriately
 	responseBody ,error := http.Post("/meetings", "json",bytes.NewBuffer(meetinginstance)
-	fmt.Fprintf(w, "Person: %+v", )
+	fmt.Fprintf(writeresponse, responseBody)
 
 }
 
