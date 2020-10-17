@@ -55,21 +55,27 @@ func scheduleMeeting(w http.ResponseWriter, request *http.Request){
 	var mparticipants = meetinginstance.Participants
 
 
-	context,cancel = context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	filter, error := participantcollection.Find(ctx, bson.M{})
-	if err != nil { log.Fatal(err) }
-	defer cur.Close(ctx)
-	for cur.Next(ctx) {
-		var result bson.M
-		err := cur.Decode(&result)
-		if err != nil { log.Fatal(err) }
-		// do something with result....
-	}
-	if err := cur.Err(); err != nil {
-		log.Fatal(err)
-	}
 
+	for participant := range (mparticipants) {
+		context, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		filter, error := participantcollection.Find(ctx, bson.M{"meetingid":})
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer cur.Close(ctx)
+		for cur.Next(ctx) {
+			var result bson.M
+			err := cur.Decode(&result)
+			if err != nil {
+				log.Fatal(err)
+			}
+			// do something with result....
+		}
+		if err := cur.Err(); err != nil {
+			log.Fatal(err)
+		}
+	}
 
 
 
@@ -123,14 +129,45 @@ func getMeeting(writeresponse http.ResponseWriter,request *http.Request){
 
 	defer request.Body.Close()
 
-	urldata, error := ioutil.ReadAll(request.Body)
+	urldata,error := ioutil.ReadAll(request.Body)
 	if error != nil {
 		panic(error)
 	}
 
-	//get meeting from database having id obtained from url
+	var	meetingid = request.URL.Path[2:]
 
-	fmt.Fprint(writeresponse,meeting)
+	var meeting Meeting
+
+	context, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, error := mongo.Connect(context, options.Client().ApplyURI("mongodb://localhost:27017"))
+	defer func() {
+		if error = client.Disconnect(context); error != nil {
+			panic(error)
+		}
+	}()
+
+	context, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	error = client.Ping(context, readpref.Primary())
+	meetingscollection := client.Database("ScheduleMeet").Collection("meetings")
+
+
+	filter := bson.M{"meetingid": meetingid }
+	context, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err = meetingscollection.FindOne(ctx, filter).Decode(&meeting)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	meet, err := json.Marshal(meeting)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	//get meeting from database having id obtained from url
+	fmt.Fprint(writeresponse,meet)
 }
 
 
@@ -140,10 +177,42 @@ func listMeeting(writeresponse http.ResponseWriter,request *http.Request){
 
 	defer request.Body.Close()
 
-	urldata, error := ioutil.ReadAll(request.Body)
-	if error != nil {
-		panic(error)
+	request.ParseForm()
+	starttime := request.Form.Get("start")
+	endtime   := request.Form.Get("end")
+
+
+
+	context, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, error := mongo.Connect(context, options.Client().ApplyURI("mongodb://localhost:27017"))
+	defer func() {
+		if error = client.Disconnect(context); error != nil {
+			panic(error)
+		}
+	}()
+
+	context, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	error = client.Ping(context, readpref.Primary())
+	meetingscollection := client.Database("ScheduleMeet").Collection("meetings")
+
+
+	context, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	filter, err := collection.Find(ctx, bson.D{})
+	if err != nil { log.Fatal(err) }
+	defer filter.Close(ctx)
+	for filter.Next(ctx) {
+		var result bson.M
+		err := cur.Decode(&result)
+		if err != nil { log.Fatal(err) }
+		// do something with result....
 	}
+	if err := filter.Err(); err != nil {
+		log.Fatal(err)
+	}
+
 
 	//get start and end times and return
 	//the meetings having start time or end time
